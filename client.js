@@ -25,16 +25,16 @@ function Client(room, socket) {
 	
 	//user status events
 	var status = function () {
-		self.emitPosition();
+		self.emitStatus();
 	};
-	socket.on('status', status);
+	socket.on('statusRequest', status);
 	
 	//socket events
 	socket.on('disconnect', function () {
 		socket.removeListener('forward', forward);
 		socket.removeListener('clockwise', clockwise);
 		socket.removeListener('cclockwise', cclockwise);
-		socket.removeListener('status', status);
+		socket.removeListener('statusRequest', status);
 		
 		room.destroyPlayer(self.player); //we are done with this client
 		
@@ -43,10 +43,10 @@ function Client(room, socket) {
 		console.log("There are " + clients.length + " clients.");
 	});
 	
-	this.emitPosition();
+	this.emitStatus();
 };
-Client.prototype.emitPosition = function () {
-	this.socket.emit('position', {
+Client.prototype.emitStatus = function () {
+	this.socket.emit('status', {
 		x: this.player.getX(),
 		y: this.player.getY(),
 		rot: this.player.getRotation(),

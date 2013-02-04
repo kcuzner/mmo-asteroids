@@ -4,8 +4,8 @@
 
 var MAX_SPEED = 10.0; //10 m/s max
 var MAX_ROT = 6.28; //2pi rad/s max
-var FORWARD_FORCE = 1000; //2.5 N impulse forward
-var ROT_TORQUE = 3.0; //3 Nm torque for rotating
+var FORWARD_FORCE = 1000; //1000 N impulse forward
+var ROT_TORQUE = 10; //3 Nm torque for rotating
 
 var b2d = require('box2d'),
 	util = require('util');
@@ -45,7 +45,7 @@ Player.prototype.getAngularVelocity = function () {
 //moves a player in their current direction so long as their speed isn't exceeding the max
 Player.prototype.forward = function () {
 	var rotation = this.body.GetAngle();
-	var force = new b2d.b2Vec2(Math.cos(rotation) * FORWARD_FORCE, Math.sin(rotation));
+	var force = new b2d.b2Vec2(Math.cos(rotation) * FORWARD_FORCE, Math.sin(rotation) * FORWARD_FORCE);
 	this.body.ApplyForce(force, this.body.GetWorldCenter());
 }
 //rotates a player clockwise so long as their rotational speed isn't exceeding the max
@@ -90,9 +90,43 @@ exports.Room = function(capacity, maxBots) {
 	
 	//a room contains a world with dimensions 500 by 500
 	var worldAABB = new b2d.b2AABB();
-	worldAABB.lowerBound.Set(-250.0, -250.0);
-	worldAABB.upperBound.Set(250.0, 250.0);
+	worldAABB.lowerBound.Set(0, 0);
+	worldAABB.upperBound.Set(500.0, 500.0);
 	this.world = new b2d.b2World(worldAABB, new b2d.b2Vec2(0.0, 0.0), true);
+	
+	var boundaryListener = new b2d.b2BoundaryListener();
+	boundaryListener.Violation = function (body) {
+		console.log(body);
+	}
+	this.world.SetBoundaryListener(boundaryListener);
+	
+	//create walls
+	var wallShape = new b2d.b2PolygonDef();
+	wallShape.SetAsBox(500, 1);
+	wallShape.density = 0.0;
+	wallShape.friction = 0.3;
+	
+	var bodyDef = new b2d.b2BodyDef();
+	bodyDef.position.Set(250, 20);
+	var north = this.world.CreateBody(bodyDef);
+	north.CreateShape(wallShape);
+	
+	bodyDef = new b2d.b2BodyDef();
+	bodyDef.position.Set(250, 499);
+	var south = this.world.CreateBody(bodyDef);
+	south.CreateShape(wallShape);
+	
+	bodyDef = new b2d.b2BodyDef();
+	bodyDef.position.Set(499,250);
+	bodyDef.angle = Math.PI / 2;
+	var east = this.world.CreateBody(bodyDef);
+	east.CreateShape(wallShape);
+	
+	bodyDef = new b2d.b2BodyDef();
+	bodyDef.position.Set(1, 250);
+	bodyDef.angle = Math.PI / 2;
+	var west = this.world.CreateBody(bodyDef);
+	west.CreateShape(wallShape);
 	
 	this.__intervalId = null;
 };
@@ -104,7 +138,12 @@ exports.Room.prototype.start = function() {
 	var iterations = 10; //10 iterations
 	
 	this.__intervalId = setInterval(function () {
-		self.world.Step(timestep, iterations);
+		try {
+			self.world.Step(timestep, iterations);
+		}
+		catch (e) {
+			console.log("ERROR!!!");
+		}
 	}, 1.0/60.0 * 1000);
 }
 //stops room simulation
@@ -117,7 +156,7 @@ exports.Room.prototype.stop = function() {
 //Creates a client in a room
 exports.Room.prototype.createClient = function() {
 	var bodyDef = new b2d.b2BodyDef();
-	bodyDef.position.Set(0.0, 0.0);
+	bodyDef.position.Set(50.0, 50.0);
 	bodyDef.angularDamping = 0.2;
 	bodyDef.linearDamping = 0.2;
 	
