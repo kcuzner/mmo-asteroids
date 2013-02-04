@@ -7,10 +7,20 @@ var MAX_ROT = 6.28; //2pi rad/s max
 var FORWARD_FORCE = 1000; //1000 N impulse forward
 var ROT_TORQUE = 10; //3 Nm torque for rotating
 
-var b2d = require('box2d'),
+var Box2D = require('box2dweb-commonjs').Box2D,
 	util = require('util');
 
-
+var   b2Vec2 = Box2D.Common.Math.b2Vec2,
+	b2BodyDef = Box2D.Dynamics.b2BodyDef,
+	b2Body = Box2D.Dynamics.b2Body,
+	b2FixtureDef = Box2D.Dynamics.b2FixtureDef,
+	b2Fixture = Box2D.Dynamics.b2Fixture,
+	b2World = Box2D.Dynamics.b2World,
+	b2MassData = Box2D.Collision.Shapes.b2MassData,
+	b2PolygonShape = Box2D.Collision.Shapes.b2PolygonShape,
+	b2CircleShape = Box2D.Collision.Shapes.b2CircleShape,
+	b2DebugDraw = Box2D.Dynamics.b2DebugDraw,
+	b2AABB = Box2D.Collision.b2AABB;
 
 /**
  * Represents a player in a room
@@ -45,7 +55,7 @@ Player.prototype.getAngularVelocity = function () {
 //moves a player in their current direction so long as their speed isn't exceeding the max
 Player.prototype.forward = function () {
 	var rotation = this.body.GetAngle();
-	var force = new b2d.b2Vec2(Math.cos(rotation) * FORWARD_FORCE, Math.sin(rotation) * FORWARD_FORCE);
+	var force = new b2Vec2(Math.cos(rotation) * FORWARD_FORCE, Math.sin(rotation) * FORWARD_FORCE);
 	this.body.ApplyForce(force, this.body.GetWorldCenter());
 }
 //rotates a player clockwise so long as their rotational speed isn't exceeding the max
@@ -83,50 +93,59 @@ util.inherits(Client, Player);
  * Represents a room with a given capacity
  */
 exports.Room = function(capacity, maxBots) {
-	this.__clientShape = new b2d.b2PolygonDef();
-	this.__clientShape.SetAsBox(1.0, 1.0);
-	this.__clientShape.density = 1.0;
-	this.__clientShape.friction = 0.3;
+	this.__clientFixDef = new b2FixtureDef;
+	this.__clientFixDef.density = 1.0;
+	this.__clientFixDef.friction = 0.3;
+	this.__clientFixDef.resitution = 0.2;
+	this.__clientFixDef.shape = new b2PolygonShape;
+	this.__clientFixDef.shape.SetAsBox(1.0, 1.0);
+	
 	
 	//a room contains a world with dimensions 500 by 500
-	var worldAABB = new b2d.b2AABB();
-	worldAABB.lowerBound.Set(0, 0);
-	worldAABB.upperBound.Set(500.0, 500.0);
-	this.world = new b2d.b2World(worldAABB, new b2d.b2Vec2(0.0, 0.0), true);
+	this.world = new b2World(new b2Vec2(0.0, 0.0), true);
 	
-	var boundaryListener = new b2d.b2BoundaryListener();
+	/*var boundaryListener = new b2BoundaryListener();
 	boundaryListener.Violation = function (body) {
-		console.log(body);
+		//we will move this body to the opposite side
+		var position = body.GetWorldCenter();
+		//snap to opposite side
+		if (position.x < 0) {
+			position.x = worldAABB.upperBound.x + position.x;
+		}
+		if (position.y < 0) {
+			position.y = worldAABB.upperBound.y + position.y;
+		}
+		if (position.x > worldAABB.upperBound.x) {
+			position.x -= worldAABB.upperBound.x;
+		}
+		if (position.y > worldAABB.upperBound.y) {
+			position.y -= worldAABB.upperBound.y;
+		}
+		
+		body.m_flags = body.m_flags & (~b2d.b2Body.e_frozenFlag);
 	}
-	this.world.SetBoundaryListener(boundaryListener);
+	this.world.SetBoundaryListener(boundaryListener);*/
 	
 	//create walls
-	var wallShape = new b2d.b2PolygonDef();
-	wallShape.SetAsBox(500, 1);
-	wallShape.density = 0.0;
-	wallShape.friction = 0.3;
-	
-	var bodyDef = new b2d.b2BodyDef();
-	bodyDef.position.Set(250, 20);
-	var north = this.world.CreateBody(bodyDef);
-	north.CreateShape(wallShape);
-	
-	bodyDef = new b2d.b2BodyDef();
-	bodyDef.position.Set(250, 499);
-	var south = this.world.CreateBody(bodyDef);
-	south.CreateShape(wallShape);
-	
-	bodyDef = new b2d.b2BodyDef();
-	bodyDef.position.Set(499,250);
-	bodyDef.angle = Math.PI / 2;
-	var east = this.world.CreateBody(bodyDef);
-	east.CreateShape(wallShape);
-	
-	bodyDef = new b2d.b2BodyDef();
-	bodyDef.position.Set(1, 250);
-	bodyDef.angle = Math.PI / 2;
-	var west = this.world.CreateBody(bodyDef);
-	west.CreateShape(wallShape);
+	/*var fixDef = new b2FixtureDef;
+	fixDef.density = 1.0;
+	fixDef.friction = 0.5;
+	fixDef.restitution = 0.2;
+
+	var bodyDef = new b2BodyDef;
+
+	bodyDef.type = b2Body.b2_staticBody;
+	fixDef.shape = new b2PolygonShape;
+	fixDef.shape.SetAsBox(20, 2);
+	bodyDef.position.Set(10, 0);
+	this.world.CreateBody(bodyDef).CreateFixture(fixDef);
+	bodyDef.position.Set(10, 20);
+	this.world.CreateBody(bodyDef).CreateFixture(fixDef);
+	fixDef.shape.SetAsBox(2, 20);
+	bodyDef.position.Set(0, 10);
+	this.world.CreateBody(bodyDef).CreateFixture(fixDef);
+	bodyDef.position.Set(20, 10);
+	this.world.CreateBody(bodyDef).CreateFixture(fixDef);*/
 	
 	this.__intervalId = null;
 };
@@ -138,12 +157,7 @@ exports.Room.prototype.start = function() {
 	var iterations = 10; //10 iterations
 	
 	this.__intervalId = setInterval(function () {
-		try {
-			self.world.Step(timestep, iterations);
-		}
-		catch (e) {
-			console.log("ERROR!!!");
-		}
+		self.world.Step(timestep, iterations);
 	}, 1.0/60.0 * 1000);
 }
 //stops room simulation
@@ -155,14 +169,12 @@ exports.Room.prototype.stop = function() {
 }
 //Creates a client in a room
 exports.Room.prototype.createClient = function() {
-	var bodyDef = new b2d.b2BodyDef();
-	bodyDef.position.Set(50.0, 50.0);
-	bodyDef.angularDamping = 0.2;
-	bodyDef.linearDamping = 0.2;
+	var bodyDef = new b2BodyDef();
+	bodyDef.type = b2Body.b2_dynamicBody;
+	bodyDef.position.Set(10.0, 10.0);
 	
 	var body = this.world.CreateBody(bodyDef);
-	body.CreateShape(this.__clientShape);
-	body.SetMassFromShapes();
+	body.CreateFixture(this.__clientFixDef);
 	
 	var client = new Client(body);
 	
