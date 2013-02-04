@@ -33,6 +33,15 @@ Player.prototype.getY = function() {
 Player.prototype.getRotation = function () {
 	return this.body.GetAngle();
 }
+//returns the current player linear velocity
+Player.prototype.getLinearVelocity = function () {
+	var v = this.body.GetLinearVelocity();
+	return { x: v.x, y: v.y };
+}
+//returns the current player angular velocity
+Player.prototype.getAngularVelocity = function () {
+	return this.body.GetAngularVelocity();
+}
 //moves a player in their current direction so long as their speed isn't exceeding the max
 Player.prototype.forward = function () {
 	var rotation = this.body.GetAngle();

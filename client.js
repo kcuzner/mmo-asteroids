@@ -46,7 +46,13 @@ function Client(room, socket) {
 	this.emitPosition();
 };
 Client.prototype.emitPosition = function () {
-	this.socket.emit('position', { x: this.player.getX(), y: this.player.getY(), rot: this.player.getRotation() });
+	this.socket.emit('position', {
+		x: this.player.getX(),
+		y: this.player.getY(),
+		rot: this.player.getRotation(),
+		velocity: this.player.getLinearVelocity(),
+		omega: this.player.getAngularVelocity()
+	});
 }
 
 exports.makeSocketHandler = function (room) {

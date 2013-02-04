@@ -13,7 +13,7 @@
 		this.socket = socket;
 		
 		var socketPoll = setInterval( function () {
-			self.update(); //every 250ms we update from the socket
+			self.socket.emit('status'); //every 250ms we update from the socket
 		}, 250)
 		
 		var stepInterval = setInterval( function () {
@@ -24,10 +24,6 @@
 			//we are done with the socket
 			clearInterval(socketPoll);
 		});
-	};
-	//the game updates from the socket every 250ms
-	Game.prototype.update = function () {
-		this.socket.emit('status'); //ask for our status
 	};
 	//the game steps every 1/30 second
 	Game.prototype.step = function () {
