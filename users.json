@@ -1,0 +1,15 @@
+{
+	"_id" : "_design/users",
+	
+	"language" : "javascript",
+	
+	"views" : {
+		"users" : {
+			"map": "function(doc) {
+				if (doc.type && doc.type == 'user') {
+					emit(doc.id, doc);
+				}
+			}"
+		},
+	}
+}
