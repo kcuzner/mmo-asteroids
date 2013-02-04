@@ -8,7 +8,8 @@ function start() {
 		app = express(),
 		server = require('http').createServer(app),
 		io = require('socket.io').listen(server),
-		asteroids = require('./asteroids');
+		asteroids = require('./asteroids'),
+		clients = require('./client');
 	
 	server.listen(8080);
 	
@@ -17,16 +18,12 @@ function start() {
 	});
 	app.use(express.static(__dirname + '/static'));
 	
-	
 	var room = new asteroids.Room(50, 10);
-	var client = room.createClient();
-	client.forward();
 	
 	room.start();
 	
-	setInterval(function() {
-		console.log(client.getX() + " " + client.getY() + " " + client.getRotation());
-	}, 1000);
+	var handler = clients.makeSocketHandler(room);
+	io.sockets.on('connection', handler);
 }
 
 
