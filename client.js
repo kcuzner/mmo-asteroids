@@ -18,6 +18,9 @@ function Client(room, socket) {
 	var cclockwise = function () {
 		self.player.cclockwise();
 	}
+	var brake = function () {
+		self.player.brake();
+	}
 	//user countrol events
 	socket.on('forward', forward);
 	socket.on('clockwise', clockwise);

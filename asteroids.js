@@ -4,8 +4,8 @@
 
 var MAX_SPEED = 10.0; //10 m/s max
 var MAX_ROT = 6.28; //2pi rad/s max
-var FORWARD_FORCE = 1000; //1000 N impulse forward
-var ROT_TORQUE = 10; //3 Nm torque for rotating
+var FORWARD_IMPULSE = 10; //1000 N impulse forward
+var ROT_IMPULSE = 0.5; //3 Nm torque for rotating
 
 var Box2D = require('box2dweb-commonjs').Box2D,
 	util = require('util');
@@ -55,16 +55,30 @@ Player.prototype.getAngularVelocity = function () {
 //moves a player in their current direction so long as their speed isn't exceeding the max
 Player.prototype.forward = function () {
 	var rotation = this.body.GetAngle();
-	var force = new b2Vec2(Math.cos(rotation) * FORWARD_FORCE, Math.sin(rotation) * FORWARD_FORCE);
-	this.body.ApplyForce(force, this.body.GetWorldCenter());
+	var force = new b2Vec2(Math.cos(rotation) * FORWARD_IMPULSE, Math.sin(rotation) * FORWARD_IMPULSE);
+	this.body.ApplyImpulse(force, this.body.GetWorldCenter());
 }
 //rotates a player clockwise so long as their rotational speed isn't exceeding the max
 Player.prototype.clockwise = function () {
-	this.body.ApplyTorque(-ROT_TORQUE);
+	var angle = this.body.GetAngle();
+	var rotation = angle + Math.PI / 2; //angle we are going to apply the force at
+	var force = new b2Vec2(Math.cos(rotation) * ROT_IMPULSE, Math.sin(rotation) * ROT_IMPULSE);
+	var point = this.body.GetWorldCenter(); //this will be translated slightly
+	point = new b2Vec2(point.x, point.y);
+	point.x += Math.cos(angle) * 2;
+	point.y += Math.sin(angle) * 2;
+	this.body.ApplyImpulse(force, point);
 }
 //rotates a player counterclockwise so long as their rotational speed isn't exceeding the max
 Player.prototype.cclockwise = function () {
-	this.body.ApplyTorque(ROT_TORQUE);
+	var angle = this.body.GetAngle();
+	var rotation = angle - Math.PI / 2; //angle we are going to apply the force at
+	var force = new b2Vec2(Math.cos(rotation) * ROT_IMPULSE, Math.sin(rotation) * ROT_IMPULSE);
+	var point = this.body.GetWorldCenter(); //this will be translated slightly
+	point = new b2Vec2(point.x, point.y);
+	point.x += Math.cos(angle) * 2;
+	point.y += Math.sin(angle) * 2;
+	this.body.ApplyImpulse(force, point);
 }
 
 
@@ -171,6 +185,8 @@ exports.Room.prototype.stop = function() {
 exports.Room.prototype.createClient = function() {
 	var bodyDef = new b2BodyDef();
 	bodyDef.type = b2Body.b2_dynamicBody;
+	bodyDef.linearDamping = 0.4;
+	bodyDef.angularDamping = 0.4;
 	bodyDef.position.Set(10.0, 10.0);
 	
 	var body = this.world.CreateBody(bodyDef);

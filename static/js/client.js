@@ -39,9 +39,10 @@
 	Game.prototype.step = function () {
 		if (this.lastStatus) {
 			//predict our status
+			scaling = 5;
 			this.predictedStatus = {
-				x: this.lastStatus.x + (this.lastStatus.velocity.x * this.timeSinceLast),
-				y: this.lastStatus.y + (this.lastStatus.velocity.y * this.timeSinceLast),
+				x: scaling * (this.lastStatus.x + (this.lastStatus.velocity.x * this.timeSinceLast)),
+				y: scaling * (this.lastStatus.y + (this.lastStatus.velocity.y * this.timeSinceLast)),
 				rot: this.lastStatus.rot + (this.lastStatus.omega * this.timeSinceLast),
 				velocity: this.lastStatus.velocity,
 				omega: this.lastStatus.omega
@@ -83,6 +84,7 @@
 		}
 		if (e.keyCode == 40) {
 			//down
+			this.socket.emit('brake');
 		}
 	};
 	
