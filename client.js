@@ -18,26 +18,34 @@ function Client(room, socket) {
 	var cclockwise = function () {
 		self.player.cclockwise();
 	}
-	var brake = function () {
-		self.player.brake();
+	var shoot = function () {
+		console.log("shoot");
+		self.player.shoot();
 	}
+	var worldQuery = function (data) { //a query about world events from the client.
+		var entityData = room.getEntitiesInsideBox(data.x, data.y, data.width, data.height);
+		socket.emit('entities', entityData);
+	}
+	
+	//tell the client who they are so they can find themselves in the entities
+	socket.emit('identity', { id: this.player.id, score: this.player.score });
+	
 	//user countrol events
 	socket.on('forward', forward);
 	socket.on('clockwise', clockwise);
 	socket.on('cclockwise', cclockwise);
+	socket.on('shoot', shoot);
 	
-	//user status events
-	var status = function () {
-		self.emitStatus();
-	};
-	socket.on('statusRequest', status);
+	//game status events
+	socket.on('world', worldQuery);
 	
 	//socket events
 	socket.on('disconnect', function () {
 		socket.removeListener('forward', forward);
 		socket.removeListener('clockwise', clockwise);
 		socket.removeListener('cclockwise', cclockwise);
-		socket.removeListener('statusRequest', status);
+		socket.removeListener('shoot', shoot);
+		socket.removeListener('world', worldQuery);
 		
 		room.destroyPlayer(self.player); //we are done with this client
 		
@@ -45,18 +53,7 @@ function Client(room, socket) {
 		clients.splice(clients.indexOf(self), 1);
 		console.log("There are " + clients.length + " clients.");
 	});
-	
-	this.emitStatus();
 };
-Client.prototype.emitStatus = function () {
-	this.socket.emit('status', {
-		x: this.player.getX(),
-		y: this.player.getY(),
-		rot: this.player.getRotation(),
-		velocity: this.player.getLinearVelocity(),
-		omega: this.player.getAngularVelocity()
-	});
-}
 
 exports.makeSocketHandler = function (room) {
 	return function(socket) {

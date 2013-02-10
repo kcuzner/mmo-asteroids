@@ -6,6 +6,7 @@
 		<link rel="stylesheet" type="text/css" href="/css/main.css"/>
 		<script src="/js/jquery-1.9.0.min.js"></script>
 		<script src="/js/jquery-ui-1.10.0.custom.min.js"></script>
+		<script src="/js/underscore-min.js"></script>
 		<script src="/socket.io/socket.io.js"></script>
 		<script src="/js/client.js"></script>
 	</head>
@@ -16,6 +17,16 @@
 				<canvas id='game' width='950' height='512'>
 					<strong>This requires HTML5 Canvas support</strong>
 				</canvas> 
+			</div>
+		</div>
+		
+		<div id='overlay'>
+		</div>
+		
+		<div class='message-holder connecting-message'>
+			<div class='message ui-widget-content'>
+				<div class='ui-widget-header'>Message</div>
+				<br/><br/><br/>Connecting...
 			</div>
 		</div>
 		
