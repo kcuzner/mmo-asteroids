@@ -5,9 +5,14 @@ As an MMO (kinda)
 
 By Kevin Cuzner
 
-
 Concept
 -------
+Modeled after [this April Fools Joke](http://seb.ly/2012/04/node-js-experiment-mmo-asteroids/), this is an experiment with
+Node.js, socket.io, and the HTML5 canvas to make a simple MMO. It probably can't handle much and hasn't been tested for
+large amounts of players, but hopefully it will at least provide some entertainment and education.
+
+Drawing Board
+-------------
 
  * Users are stored in CouchDB with a hash. Users log in using the client-side nonce hash method.
    * Score and kill information is also stored in the user's document

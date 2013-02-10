@@ -29,6 +29,11 @@
 			};
 		});
 		
+		this.hitWait = 0;
+		self.socket.on('hit', function () {
+			hitWait = 500; //500ms to show the hit
+		});
+		
 		var socketPoll = setInterval( function () {
 			self.socket.emit('world', { x: 0, y: 0, width: 950/SCALING_FACTOR, height: 512/SCALING_FACTOR }); //every 250ms we update from the socket
 		}, 250)
@@ -77,7 +82,7 @@
 		
 		var canvas = $("#game")[0];
 		var context = canvas.getContext("2d");
-		context.fillStyle = '#ff0000';
+		context.fillStyle = '#000000';
 		context.fillRect(0, 0, 950, 512);
 		
 		if (this.predictedEntities) {
@@ -96,10 +101,24 @@
 					});
 					context.closePath();
 					if (!self.player || self.player.id != entity.id) {
-						context.fillStyle="#000000";
+						//them
+						context.fillStyle="#888888";
 					}
 					else {
-						context.fillStyle="#ffffff";
+						//us
+						if (this.hitWait > 0) {
+							var s = Math.floor(this.hitWait / 4);
+							if (s / 2 == Math.floor(s / 2)) {
+								context.fillStyle="#ff0000";
+							}
+							else {
+								context.fillStyle="#ffffff";
+							}
+							this.hitWait -= 30;
+						}
+						else {
+							context.fillStyle="#ffffff";
+						}
 					}
 					context.fill();
 				}
@@ -111,6 +130,12 @@
 					context.fill();
 				}
 			});			
+		}
+		
+		if (this.player) {
+			context.font = "30px Ariel";
+			context.fillStyle = "#ffffff";
+			context.fillText("Score: " + this.player.score, 10, 50);
 		}
 	};
 	Game.prototype.onKeyDown = function(e) {

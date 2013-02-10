@@ -12,7 +12,8 @@ var BULLET_TYPE = "bullet";
 
 var Box2D = require('box2dweb-commonjs').Box2D,
 	util = require('util'),
-	_ = require('underscore');
+	_ = require('underscore'),
+	events = require('events');
 
 var   b2Vec2 = Box2D.Common.Math.b2Vec2,
 	b2BodyDef = Box2D.Dynamics.b2BodyDef,
@@ -61,6 +62,11 @@ function Bullet(body, player) {
 	console.log("Bullet made for " + player.id);
 	
 	this.player = player;
+	
+	//set a timeout where we will destroy ourselves (whoa..you can do that?)
+	setTimeout(function () {
+		body.GetWorld().DestroyBody(body);
+	}, 500);
 }
 util.inherits(Bullet, Entity);
 
@@ -68,32 +74,26 @@ util.inherits(Bullet, Entity);
  * Represents a player in a room
  */
 function Player(body) {
+	var self = this;
 	Entity.call(this, body, PLAYER_TYPE);
+	events.EventEmitter.call(this);
 	
-	this.score = 0;
+	var score = 0;
+	this.setScore = function (s) {
+		console.log("SCOREDD!!!!!");
+		score = s;
+		self.emit('scoreSet', s);
+	}
+	this.getScore = function () {
+		return score;
+	}
+	
+	this.registerHit = function () {
+		self.emit('hit');
+	}
 }
 util.inherits(Player, Entity);
-//returns the current player x position
-Player.prototype.getX = function() {
-	return this.body.GetWorldCenter().x;
-}
-//returns the current player y position
-Player.prototype.getY = function() {
-	return this.body.GetWorldCenter().y;
-}
-//returns the current player rotation
-Player.prototype.getRotation = function () {
-	return this.body.GetAngle();
-}
-//returns the current player linear velocity
-Player.prototype.getLinearVelocity = function () {
-	var v = this.body.GetLinearVelocity();
-	return { x: v.x, y: v.y };
-}
-//returns the current player angular velocity
-Player.prototype.getAngularVelocity = function () {
-	return this.body.GetAngularVelocity();
-}
+util.inherits(Player, events.EventEmitter);
 //moves a player in their current direction so long as their speed isn't exceeding the max
 Player.prototype.forward = function () {
 	var rotation = this.body.GetAngle();
@@ -209,14 +209,16 @@ exports.Room = function(capacity, maxBots) {
 				//the bullet is destroyed and its parent player has their score incremented
 				if (entityA.player != entityB) {
 					self.toRemove.push(contact.GetFixtureA().GetBody());
-					entityA.player.score += 10;
+					entityA.player.setScore(entityA.player.getScore() + 10);
+					entityB.registerHit();
 				}
 			}
 			else if (entityA.type == PLAYER_TYPE && entityB.type == BULLET_TYPE) {
 				//same as above
 				if (entityB.player != entityA) {
 					self.toRemove.push(contact.GetFixtureB().GetBody());
-					entityB.player.score += 10;
+					entityB.player.setScore(entityB.player.setScore() + 10);
+					entityA.registerHit();
 				}
 			}
 		}

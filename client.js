@@ -28,7 +28,12 @@ function Client(room, socket) {
 	}
 	
 	//tell the client who they are so they can find themselves in the entities
-	socket.emit('identity', { id: this.player.id, score: this.player.score });
+	var emitIdentity = function () {
+		console.log("score");
+		console.log(self.player.getScore());
+		socket.emit('identity', { id: self.player.id, score: self.player.getScore() });
+	}
+	emitIdentity();
 	
 	//user countrol events
 	socket.on('forward', forward);
@@ -52,6 +57,14 @@ function Client(room, socket) {
 		//remove us from the list of clients
 		clients.splice(clients.indexOf(self), 1);
 		console.log("There are " + clients.length + " clients.");
+	});
+	
+	//player events
+	this.player.on('scoreSet', function (score) {
+		emitIdentity();
+	});
+	this.player.on('hit', function () {
+		socket.emit('hit');
 	});
 };
 
