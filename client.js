@@ -2,7 +2,23 @@
  * Handles human client interactions
  */
 
+var _ = require('underscore');
+
+//list of all current clients
 var clients = [];
+var actionPosition = { x: 0, y: 0 }; //the average of all the client's positions gives the location of the "action"
+
+setInterval(function () {
+	if (clients.length > 0) {
+		var x = 0, y = 0;
+		_.each(clients, function (client) {
+			x += client.player.body.GetWorldCenter().x;
+			y += client.player.body.GetWorldCenter().y;
+		});
+		actionPosition.x = x / clients.length;
+		actionPosition.y = y / clients.length;
+	}
+}, 1000); //every second we will recalculate the action position
 
 function Client(room, socket) {
 	var self = this;
@@ -25,6 +41,7 @@ function Client(room, socket) {
 	var worldQuery = function (data) { //a query about world events from the client.
 		var entityData = room.getEntitiesInsideBox(data.x, data.y, data.width, data.height);
 		socket.emit('entities', entityData);
+		socket.emit('action', actionPosition);
 	}
 	
 	//tell the client who they are so they can find themselves in the entities

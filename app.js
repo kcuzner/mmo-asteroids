@@ -22,6 +22,8 @@ function start() {
 	
 	room.start();
 	
+	//io.set('log level', 1);
+	
 	var handler = clients.makeSocketHandler(room);
 	io.sockets.on('connection', handler);
 }

@@ -5,6 +5,9 @@
 (function ($) {
 	
 	var SCALING_FACTOR = 40; //20 pixels per meter in the game
+	var CANVAS_WIDTH = 950;
+	var CANVAS_HEIGHT = 512;
+	var MARGIN = 50; //the player will stay within 200 pixels of the edge
 	var shape = [ [12, 0], [-6, 6], [-4, 0], [-6, -6] ]; //the ship shape vertices, post scaling
 	
 	/**
@@ -34,8 +37,30 @@
 			hitWait = 500; //500ms to show the hit
 		});
 		
+		this.actionPosition = { x: CANVAS_WIDTH / 2, y: CANVAS_HEIGHT / 2 }; //put it right in the middle for now
+		self.socket.on('action', function (action) {
+			self.actionPosition.x = action.x * SCALING_FACTOR;
+			self.actionPosition.y = action.y * SCALING_FACTOR;
+		});
+		
+		//we hold the window in this fun object
+		this.view = {
+			x: 0,
+			y: 0,
+			width: CANVAS_WIDTH,
+			height: CANVAS_HEIGHT,
+			scaled: function () { //returns the window scaled into physics coordinates
+				return {
+					x: this.x/SCALING_FACTOR,
+					y: this.y/SCALING_FACTOR,
+					width: this.width/SCALING_FACTOR,
+					height: this.height/SCALING_FACTOR,
+				};
+			},
+		};
 		var socketPoll = setInterval( function () {
-			self.socket.emit('world', { x: 0, y: 0, width: 950/SCALING_FACTOR, height: 512/SCALING_FACTOR }); //every 250ms we update from the socket
+			self.socket.emit('world', self.view.scaled()); //every 250ms we update from the socket
+			console.log(self.view.scaled());
 		}, 250)
 		
 		var stepInterval = setInterval( function () {
@@ -59,15 +84,39 @@
 		if (this.entities) {
 			this.predictedEntities = [];
 			_.each(this.entities, function (entity) {
-				self.predictedEntities.push({
+				var prediction = {
 					id: entity.id,
 					type: entity.type,
-					x: SCALING_FACTOR * (entity.x + (entity.velocity.x * self.entityAge)),
-					y: SCALING_FACTOR * (entity.y + (entity.velocity.y * self.entityAge)),
+					x: SCALING_FACTOR * (entity.x + (entity.velocity.x * self.entityAge)) - self.view.x,
+					y: SCALING_FACTOR * (entity.y + (entity.velocity.y * self.entityAge)) - self.view.y,
 					rot: entity.rot + (entity.omega * self.entityAge),
 					velocity: entity.velocity,
 					omega: entity.omega,
-				});
+				};
+				self.predictedEntities.push(prediction);
+				
+				if (self.player && prediction.id == self.player.id) {
+					//see if we need to shift our view for the next frame
+					var diffX = 0;
+					var diffY = 0;
+					if (prediction.x < MARGIN) {
+						diffX = prediction.x - MARGIN; //negative diffx
+					}
+					else if (prediction.x > CANVAS_WIDTH - MARGIN) {
+						diffX = prediction.x - (CANVAS_WIDTH - MARGIN); //positive diffx
+					}
+					if (prediction.y < MARGIN) {
+						diffY = prediction.y - MARGIN; //negative diffy
+					}
+					else if (prediction.y > CANVAS_HEIGHT - MARGIN) {
+						diffY = prediction.y - (CANVAS_HEIGHT - MARGIN); //negative diffy
+					}
+					//the view will be shifted over 1/4 of however far it is outside so we get a smoother transition
+					diffX *= 0.25;
+					diffY *= 0.25;
+					self.view.x += diffX;
+					self.view.y += diffY;
+				}
 			});
 			
 			//increment the age
@@ -85,6 +134,7 @@
 		context.fillStyle = '#000000';
 		context.fillRect(0, 0, 950, 512);
 		
+		//render the players and bullets
 		if (this.predictedEntities) {
 			_.each(this.predictedEntities, function(entity) {
 				if (entity.type == "player") { //render a player
@@ -132,10 +182,23 @@
 			});			
 		}
 		
+		//render the score
 		if (this.player) {
-			context.font = "30px Ariel";
+			context.font = "30px sans-serif";
 			context.fillStyle = "#ffffff";
 			context.fillText("Score: " + this.player.score, 10, 50);
+		}
+		
+		//render the direction arrow towards the action
+		if (this.actionPosition.x < this.view.x || this.actionPosition.y < this.view.y ||
+			this.actionPosition.x > this.view.x + this.view.width || this.actionPosition.y > this.view.y + this.view.height) {
+			//it is needed. find the direction to point
+			var angle = Math.atan2(this.view.x - this.actionPosition.x, this.view.y - this.actionPosition.y);
+			console.log(this.actionPosition);
+			context.beginPath();
+			context.arc(CANVAS_WIDTH / 2, CANVAS_HEIGHT / 2, 200, angle - 0.2, angle + 0.2);
+			context.strokeStyle = "#ff8888";
+			context.stroke();
 		}
 	};
 	Game.prototype.onKeyDown = function(e) {
@@ -156,8 +219,7 @@
 			this.socket.emit('brake');
 		}
 		if (e.keyCode == 32) {
-			//shoot
-			console.log("shoot");
+			//shoot (space)
 			this.socket.emit('shoot');
 		}
 	};

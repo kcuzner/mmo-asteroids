@@ -59,8 +59,6 @@ function Entity(body, type) {
 function Bullet(body, player) {
 	Entity.call(this, body, BULLET_TYPE);
 	
-	console.log("Bullet made for " + player.id);
-	
 	this.player = player;
 	
 	//set a timeout where we will destroy ourselves (whoa..you can do that?)
@@ -80,7 +78,6 @@ function Player(body) {
 	
 	var score = 0;
 	this.setScore = function (s) {
-		console.log("SCOREDD!!!!!");
 		score = s;
 		self.emit('scoreSet', s);
 	}
@@ -284,7 +281,6 @@ exports.Room.prototype.getEntitiesInsideBox = function (x, y, width, height)  {
 		var angle = entity.body.GetAngle();
 		var velocity = entity.body.GetLinearVelocity();
 		var omega = entity.body.GetAngularVelocity();
-		console.log(location);
 		bodies.push({
 			id: entity.id,
 			type: entity.type,
